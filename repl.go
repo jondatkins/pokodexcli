@@ -14,18 +14,18 @@ type cliCommand struct {
 	callback    func() error
 }
 
-var cliCommands = map[string]cliCommand{
-	"exit": {
-		name:        "exit",
-		description: "Exit the Pokedex",
-		callback:    commandExit,
-	},
-	"help": {
-		name:        "help",
-		description: "display help message",
-		callback:    help,
-	},
-}
+// var cliCommands = map[string]cliCommand{
+// 	"exit": {
+// 		name:        "exit",
+// 		description: "Exit the Pokedex",
+// 		callback:    commandExit,
+// 	},
+// 	"help": {
+// 		name:        "help",
+// 		description: "display help message",
+// 		callback:    help,
+// 	},
+// }
 
 func cleanInput(text string) []string {
 	output := strings.ToLower(text)
@@ -44,16 +44,18 @@ func startRepl() []string {
 			if len(cleanedInput) == 0 {
 				continue
 			}
-			command := cliCommands[cleanedInput[0]]
-			if command.name == "" {
+			commandName := cleanedInput[0]
+			command, exists := getCommands()[commandName]
+			if exists {
+				err := command.callback()
+				if err != nil {
+					fmt.Println(err)
+				}
+				continue
+			} else {
 				fmt.Println("Unknown command")
 				continue
 			}
-			err := command.callback()
-			if err != nil {
-				fmt.Println(err)
-			}
-
 		}
 
 		// Check for errors during scanning
@@ -69,10 +71,25 @@ func commandExit() error {
 	return nil
 }
 
-func help() error {
+func commandHelp() error {
 	fmt.Println(`Welcome to the Pokedex!
 Usage:
 help: Displays a help message
 exit: Exit the Pokedex`)
 	return nil
+}
+
+func getCommands() map[string]cliCommand {
+	return map[string]cliCommand{
+		"help": {
+			name:        "help",
+			description: "Displays a help message",
+			callback:    commandHelp,
+		},
+		"exit": {
+			name:        "exit",
+			description: "Exit the Pokedex",
+			callback:    commandExit,
+		},
+	}
 }
