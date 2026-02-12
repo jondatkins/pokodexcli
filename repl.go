@@ -2,8 +2,10 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"strings"
 )
@@ -11,7 +13,22 @@ import (
 type cliCommand struct {
 	name        string
 	description string
-	callback    func() error
+	callback    func(*config) error
+}
+
+type config struct {
+	Next     string
+	Previous string
+}
+
+type locationResponse struct {
+	Count    int    `json:"count"`
+	Next     string `json:"next"`
+	Previous string `json:"previous"`
+	Results  []struct {
+		Name string `json:"name"`
+		URL  string `json:"url"`
+	} `json:"results"`
 }
 
 // var cliCommands = map[string]cliCommand{
@@ -47,7 +64,9 @@ func startRepl() []string {
 			commandName := cleanedInput[0]
 			command, exists := getCommands()[commandName]
 			if exists {
-				err := command.callback()
+				cfg := &config{}
+				err := command.callback(cfg)
+				fmt.Println("")
 				if err != nil {
 					fmt.Println(err)
 				}
@@ -65,17 +84,72 @@ func startRepl() []string {
 	}
 }
 
-func commandExit() error {
+func commandExit(cfg *config) error {
 	fmt.Println("Closing the Pokedex... Goodbye!")
 	os.Exit(0)
 	return nil
 }
 
-func commandHelp() error {
+func commandHelp(cfg *config) error {
 	fmt.Println(`Welcome to the Pokedex!
 Usage:
 help: Displays a help message
 exit: Exit the Pokedex`)
+	return nil
+}
+
+const baseURL = "https://pokeapi.co/api/v2/location-area/"
+
+var (
+	offset = 0
+	limit  = 20
+)
+
+func buildURL(offset, limit int) string {
+	return fmt.Sprintf("%s?offset=%d&limit=%d", baseURL, offset, limit)
+}
+
+func commandMap(cfg *config) error {
+	url := buildURL(offset, limit)
+	resp, err := http.Get(url)
+	if err != nil {
+		return err
+	}
+	offset += 20
+	defer resp.Body.Close()
+	var data locationResponse
+	err = json.NewDecoder(resp.Body).Decode(&data)
+	if err != nil {
+		return err
+	}
+
+	for _, loc := range data.Results {
+		fmt.Println(loc.Name)
+	}
+	return nil
+}
+
+func commandMapb(cfg *config) error {
+	if offset-40 < 0 {
+		fmt.Println("you're on the first page")
+		return nil
+	}
+	offset -= 40
+	url := buildURL(offset, limit)
+	resp, err := http.Get(url)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	var data locationResponse
+	err = json.NewDecoder(resp.Body).Decode(&data)
+	if err != nil {
+		return err
+	}
+
+	for _, loc := range data.Results {
+		fmt.Println(loc.Name)
+	}
 	return nil
 }
 
@@ -90,6 +164,16 @@ func getCommands() map[string]cliCommand {
 			name:        "exit",
 			description: "Exit the Pokedex",
 			callback:    commandExit,
+		},
+		"map": {
+			name:        "map",
+			description: "go forward through map locations",
+			callback:    commandMap,
+		},
+		"mapb": {
+			name:        "mapb",
+			description: "go back through map locations",
+			callback:    commandMapb,
 		},
 	}
 }
