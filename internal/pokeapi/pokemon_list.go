@@ -2,19 +2,16 @@ package pokeapi
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 )
 
-// ListLocations -
-func (c *Client) ListLocations(pageURL *string) (RespShallowLocations, error) {
-	url := baseURL + "/location-area"
-	if pageURL != nil {
-		url = *pageURL
-	}
+func (c *Client) ListPokemon(areaName string) (RespShallowPokemons, error) {
+	url := baseURL + areaName
 
 	if cached, ok := c.cache.Get(url); ok {
-		var resp RespShallowLocations
+		var resp RespShallowPokemons
 		// fmt.Println("Returning Cached response for %s", url)
 		err := json.Unmarshal(cached, &resp)
 		return resp, err
@@ -22,25 +19,25 @@ func (c *Client) ListLocations(pageURL *string) (RespShallowLocations, error) {
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		return RespShallowLocations{}, err
+		return RespShallowPokemons{}, err
 	}
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return RespShallowLocations{}, err
+		return RespShallowPokemons{}, err
 	}
 	defer resp.Body.Close()
-
+	fmt.Println(resp.Body)
 	dat, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return RespShallowLocations{}, err
+		return RespShallowPokemons{}, err
 	}
 	c.cache.Add(url, dat)
 
-	locationsResp := RespShallowLocations{}
-	err = json.Unmarshal(dat, &locationsResp)
+	pokemonResp := RespShallowPokemons{}
+	err = json.Unmarshal(dat, &pokemonResp)
 	if err != nil {
-		return RespShallowLocations{}, err
+		return RespShallowPokemons{}, err
 	}
-	return locationsResp, nil
+	return pokemonResp, nil
 }
