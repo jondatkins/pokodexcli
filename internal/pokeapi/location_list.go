@@ -2,6 +2,7 @@ package pokeapi
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 )
@@ -22,11 +23,13 @@ func (c *Client) ListLocations(pageURL *string) (RespShallowLocations, error) {
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
+		fmt.Println("new request error")
 		return RespShallowLocations{}, err
 	}
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
+		fmt.Println("do request error")
 		return RespShallowLocations{}, err
 	}
 	defer resp.Body.Close()

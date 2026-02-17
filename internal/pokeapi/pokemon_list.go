@@ -8,11 +8,9 @@ import (
 )
 
 func (c *Client) ListPokemon(areaName string) (RespShallowPokemons, error) {
-	url := baseURL + areaName
-
+	url := baseURL + "/location-area/" + areaName
 	if cached, ok := c.cache.Get(url); ok {
 		var resp RespShallowPokemons
-		// fmt.Println("Returning Cached response for %s", url)
 		err := json.Unmarshal(cached, &resp)
 		return resp, err
 	}
@@ -26,8 +24,10 @@ func (c *Client) ListPokemon(areaName string) (RespShallowPokemons, error) {
 	if err != nil {
 		return RespShallowPokemons{}, err
 	}
+	if resp.StatusCode != 200 {
+		return RespShallowPokemons{}, fmt.Errorf("non-OK HTTP status: %s for URL %s", resp.Status, url)
+	}
 	defer resp.Body.Close()
-	fmt.Println(resp.Body)
 	dat, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return RespShallowPokemons{}, err
