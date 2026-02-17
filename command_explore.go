@@ -2,16 +2,20 @@ package main
 
 import "fmt"
 
-func commandExplore(cfg *config, args []string) error {
+func commandExplore(cfg *config, args ...string) error {
 	if len(args) < 1 {
 		return fmt.Errorf("usage: explore <locations>")
 	}
-	pokemonResp, err := cfg.pokeapiClient.ListPokemon(args[0])
+	name := args[0]
+	// pokemonResp, err := cfg.pokeapiClient.ListPokemon(args[0])
+	location, err := cfg.pokeapiClient.GetLocation(name)
 	if err != nil {
 		return err
 	}
-	for _, encounter := range pokemonResp.PokemonEncounters {
-		fmt.Printf("- %s\n", encounter.Pokemon.Name)
+	fmt.Printf("Exploring %s...\n", location.Name)
+	fmt.Println("Found Pokemon: ")
+	for _, enc := range location.PokemonEncounters {
+		fmt.Printf(" - %s\n", enc.Pokemon.Name)
 	}
 	return nil
 }

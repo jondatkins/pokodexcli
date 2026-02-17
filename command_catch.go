@@ -1,21 +1,28 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"math/rand"
+)
 
-func commandCatch(cfg *config, args []string) error {
+func commandCatch(cfg *config, args ...string) error {
 	if len(args) < 1 {
 		return fmt.Errorf("usage: catch <pokemon name>")
 	}
-	fmt.Printf("- 'Throwing a Pokeball at %s...'\n", args[0])
-	_, err := cfg.pokeapiClient.GetPokemon(args[0])
+	pokemon, err := cfg.pokeapiClient.GetPokemon(args[0])
 	if err != nil {
 		return err
 	}
-	// cfg.pokeapiClient.CatchPokemon(pokemonResp)
-	// fmt.Printf("Base Exp %d\n", pokemonResp.BaseExperience)
-	// for _, encounter := range pokemonResp.PokemonEncounters {
-	// 	fmt.Printf("- %s\n", encounter.Pokemon.Name)
-	// }
-	// cfg.pokeapiPokedex.CatchPokemon(pokemonResp)
+	res := rand.Intn(pokemon.BaseExperience)
+	fmt.Printf("- 'Throwing a Pokeball at %s...'\n", args[0])
+
+	if res > 40 {
+		fmt.Printf("%s escaped!\n", pokemon.Name)
+		return nil
+	}
+
+	fmt.Printf("%s was caught!\n", pokemon.Name)
+
+	cfg.caughtPokemon[pokemon.Name] = pokemon
 	return nil
 }
